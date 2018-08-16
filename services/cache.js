@@ -8,16 +8,19 @@ client.get = util.promisify(client.get)
 const exec = mongoose.Query.prototype.exec;
 
 mongoose.Query.prototype.exec = async function() {
-  console.log('About to run a query');
 
   const key = JSON.stringify(Object.assign({}, this.getQuery(), 
     { collection: this.mongooseCollection.name }
   ));
+  
   const cachedResult = await client.get(key);
   
   if (cachedResult) {
-    console.log(cachedResult)
-    return JSON.parse(cachedResult)
+    const doc = JSON.parse(cachedResult);
+
+    return Array.isArray(doc) ? 
+      doc.map(d => new this.model(d)) :
+      new this.model(doc)
   }
 
   const result = await exec.apply(this, arguments);
